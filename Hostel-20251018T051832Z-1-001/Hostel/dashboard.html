@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostel Management Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,0.2);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stat-card.success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        .btn-custom {
+            border-radius: 25px;
+            padding: 8px 20px;
+        }
+        .dashboard-section {
+            display: none;
+        }
+        .dashboard-section.active {
+            display: block;
+        }
+        .logo-container {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .logo-image {
+            width: 80px;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 4px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <div class="logo-container mb-3">
+                            <img src="https://image2url.com/images/1756908980631-fd30ec65-c05f-4b64-b020-9e3d5d7be307.jpeg" 
+                                 class="logo-image" alt="Navkis College Logo">
+                        </div>
+                        <h6 class="text-white mt-2" id="userName">Welcome</h6>
+                        <small class="text-white-50" id="userRole">Role</small>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showSection('overview')">
+                                <i class="bi bi-house-door"></i> Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('students')">
+                                <i class="bi bi-people"></i> Students
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('rooms')">
+                                <i class="bi bi-door-open"></i> Rooms
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('fees')">
+                                <i class="bi bi-credit-card"></i> Fees
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('notices')">
+                                <i class="bi bi-megaphone"></i> Notices
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('visitors')">
+                                <i class="bi bi-people-fill"></i> Visitors
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('complaints')">
+                                <i class="bi bi-chat-dots"></i> Complaints
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('attendance')">
+                                <i class="bi bi-clipboard-check"></i> Attendance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSection('outpass')">
+                                <i class="bi bi-box-arrow-up-right"></i> Outpass
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="pageTitle">Dashboard Overview</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overview Section -->
+                <div id="overview" class="dashboard-section active">
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-uppercase mb-1" id="stat1Label">Total Students</div>
+                                            <div class="h5 mb-0 font-weight-bold" id="totalStudents">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-people fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card success h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-uppercase mb-1" id="stat2Label">Occupied Rooms</div>
+                                            <div class="h5 mb-0 font-weight-bold" id="occupiedRooms">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-door-open fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card warning h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-uppercase mb-1" id="stat3Label">Pending Fees</div>
+                                            <div class="h5 mb-0 font-weight-bold" id="pendingFees">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-credit-card fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card stat-card info h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-uppercase mb-1">Active Notices</div>
+                                            <div class="h5 mb-0 font-weight-bold" id="activeNotices">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-megaphone fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold" id="tableHeader">Recent Students</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Email</th>
+                                                    <th>Room</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="recentStudentsTable">
+                                                <!-- Dynamic content -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Recent Notices</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="recentNotices">
+                                        <!-- Dynamic content -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Section -->
+                <div id="students" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">Student Management</h6>
+                            <div>
+                                <button class="btn btn-primary btn-sm" onclick="showAddStudentModal()">
+                                    <i class="bi bi-person-plus"></i> Add Student
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search and Filter -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="studentSearch" placeholder="Search students by name, email, or room...">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="searchStudents()">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <small class="text-muted" id="paginationInfo">Loading...</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Students Table -->
+                            <div class="table-responsive">
+                                <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>USN</th>
+                                    <th>Email</th>
+                                    <th>Room Number</th>
+                                    <th>Fees Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                                    <tbody id="studentsTable">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div class="d-flex justify-content-center mt-3">
+                                <div id="paginationControls">
+                                    <!-- Dynamic pagination buttons -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rooms Section -->
+                <div id="rooms" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">Room Management</h6>
+                            <div>
+                                <button class="btn btn-info btn-sm me-2" onclick="showRoomManagementModal()">
+                                    <i class="bi bi-gear"></i> Manage Rooms
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="showAssignRoomModal()">
+                                    <i class="bi bi-plus-circle"></i> Assign Room
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Room Statistics -->
+                            <div class="row mb-4" id="roomStats">
+                                <!-- Dynamic room statistics -->
+                            </div>
+                            
+                            <!-- Room Grid -->
+                            <div class="row" id="roomsGrid">
+                                <!-- Dynamic room cards -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fees Section -->
+                <div id="fees" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="m-0 font-weight-bold">Fee Management</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Room</th>
+                                            <th>Total Fee</th>
+                                            <th>Paid</th>
+                                            <th>Due</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="feesTable">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notices Section -->
+                <div id="notices" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">Notice Board</h6>
+                            <button class="btn btn-info btn-sm" onclick="showAddNoticeModal()">
+                                <i class="bi bi-plus-circle"></i> Add Notice
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="noticesList">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+
+                <!-- Visitors Section -->
+                <div id="visitors" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">Visitor Management</h6>
+                            <div>
+                                <button class="btn btn-primary btn-sm me-2" onclick="showAddVisitorModal()">
+                                    <i class="bi bi-plus-circle"></i> Add Visitor
+                                </button>
+                                <button class="btn btn-info btn-sm" onclick="refreshVisitors()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Visitors Statistics -->
+                            <div class="row mb-4" id="visitorsStats">
+                                <div class="col-md-3">
+                                    <div class="card bg-primary text-white">
+                                        <div class="card-body text-center">
+                                            <h5 id="totalVisitors">0</h5>
+                                            <small>Total Visitors</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body text-center">
+                                            <h5 id="currentVisitors">0</h5>
+                                            <small>Currently Inside</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-warning text-white">
+                                        <div class="card-body text-center">
+                                            <h5 id="todayVisitors">0</h5>
+                                            <small>Today's Visitors</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-info text-white">
+                                        <div class="card-body text-center">
+                                            <h5 id="pendingVisitors">0</h5>
+                                            <small>Pending Approval</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Search and Filter -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="visitorSearch" placeholder="Search visitors by name, student, or purpose...">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="searchVisitors()">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select class="form-select" id="visitorStatusFilter" onchange="filterVisitors()">
+                                                <option value="">All Status</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="approved">Approved</option>
+                                                <option value="inside">Inside</option>
+                                                <option value="left">Left</option>
+                                                <option value="rejected">Rejected</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select class="form-select" id="visitorDateFilter" onchange="filterVisitors()">
+                                                <option value="">All Dates</option>
+                                                <option value="today">Today</option>
+                                                <option value="week">This Week</option>
+                                                <option value="month">This Month</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Visitors Table -->
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Visitor ID</th>
+                                            <th>Visitor Name</th>
+                                            <th>Student</th>
+                                            <th>Purpose</th>
+                                            <th>Entry Time</th>
+                                            <th>Exit Time</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="visitorsTable">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Complaints Section -->
+                <div id="complaints" class="dashboard-section">
+                    <div class="row">
+                        <div class="col-lg-6 mb-4" id="complaintFormCol">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="m-0 font-weight-bold"><i class="bi bi-plus-circle me-2"></i>Submit Hostel Complaint</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info mb-3">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Only hostel-related complaints are allowed.
+                                    </div>
+                                    <form id="complaintForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Type <span class="text-danger">*</span></label>
+                                            <select class="form-select form-select-lg" id="complaintType" required>
+                                                <option value="" selected disabled>Select Type</option>
+                                                <option value="maintenance">Maintenance Problem</option>
+                                                <option value="water">Water Problem</option>
+                                                <option value="electricity">Electricity Problem</option>
+                                                <option value="cleanliness">Cleanliness</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Subject <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="complaintSubject" required placeholder="Brief subject of your complaint">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Description <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="complaintDescription" rows="6" style="min-height: 140px;" required placeholder="Describe the issue in detail..."></textarea>
+                                            <div class="form-text">Minimum 10 characters</div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-send me-2"></i>Submit Complaint</button>
+                                        <div id="complaintMessage" class="mt-2 text-danger"></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4" id="complaintsListCol">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold"><i class="bi bi-list-check me-2"></i>Complaints</h6>
+                                    <button class="btn btn-sm btn-outline-light" onclick="refreshComplaints()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Warden statistics (hidden for students) -->
+                                    <div class="row mb-3" id="complaintsStats"></div>
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Student</th>
+                                                    <th>Type</th>
+                                                    <th>Subject</th>
+                                                    <th>Date</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="complaintsTable"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance Section -->
+                <div id="attendance" class="dashboard-section">
+                    <div class="row" id="attendanceWardenRow">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="m-0 font-weight-bold">Attendance Management</h6>
+                                        <small class="text-muted">Select a date and mark student attendance</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" id="attendanceDate" class="form-control" style="max-width: 200px;">
+                                        <button class="btn btn-info btn-sm" onclick="loadAttendanceForDate()"><i class="bi bi-arrow-clockwise"></i> Load</button>
+                                        <button class="btn btn-primary btn-sm" onclick="saveAttendanceChanges()"><i class="bi bi-save"></i> Save Changes</button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="downloadAttendance()"><i class="bi bi-download"></i> Download</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3" id="attendanceStats"></div>
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Student</th>
+                                                    <th>USN</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="attendanceTable"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" id="attendanceStudentRow">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold">My Attendance Summary</h6>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshMyAttendance()">
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="card bg-primary text-white"><div class="card-body">
+                                                <h5 id="attTotal">0</h5><small>Total Days</small>
+                                            </div></div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="card bg-success text-white"><div class="card-body">
+                                                <h5 id="attPresent">0</h5><small>Present</small>
+                                            </div></div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="card bg-warning text-white"><div class="card-body">
+                                                <h5 id="attAbsent">0</h5><small>Absent</small>
+                                            </div></div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <h4 id="attPercent">0%</h4>
+                                        <small class="text-muted">Attendance Percentage</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Recent Attendance</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul id="attRecent" class="list-group"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outpass Section -->
+                <div id="outpass" class="dashboard-section">
+                    <div class="row" id="outpassStudentRow">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="m-0 font-weight-bold">Request Outpass</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="outpassForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Reason <span class="text-danger">*</span></label>
+                                            <input type="text" id="outpassReason" class="form-control" required placeholder="Reason for outpass">
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">From Date <span class="text-danger">*</span></label>
+                                                <input type="date" id="outpassFrom" class="form-control" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">To Date <span class="text-danger">*</span></label>
+                                                <input type="date" id="outpassTo" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Submit Request</button>
+                                        <div id="outpassMessage" class="mt-2 text-danger"></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold">My Outpass Requests</h6>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadMyOutpasses()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Period</th>
+                                                    <th>Reason</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="myOutpassTable"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" id="outpassWardenRow">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold">Outpass Approvals</h6>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadAllOutpasses()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Student</th>
+                                                    <th>Period</th>
+                                                    <th>Reason</th>
+                                                    <th>Status</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="outpassApprovalTable"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                (function() {
+                    try {
+                        var user = null;
+                        try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) {}
+                        var isWarden = user && user.role === 'warden';
+                        var studentRow = document.getElementById('outpassStudentRow');
+                        var wardenRow = document.getElementById('outpassWardenRow');
+                        if (studentRow) studentRow.style.display = isWarden ? 'none' : '';
+                        if (wardenRow) wardenRow.style.display = isWarden ? '' : 'none';
+                    } catch (e) {}
+                })();
+                </script>
+
+                <!-- Student Profile Section -->
+                <div id="profile" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="m-0 font-weight-bold">My Profile</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Personal Information</h5>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Name:</strong></td>
+                                            <td id="profileName">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email:</strong></td>
+                                            <td id="profileEmail">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Role:</strong></td>
+                                            <td id="profileRole">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Room Number:</strong></td>
+                                            <td id="profileRoom">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fee Status:</strong></td>
+                                            <td id="profileFees">-</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Quick Actions</h5>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" onclick="showUpdateProfileModal()">
+                                            <i class="bi bi-pencil"></i> Update Profile
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="showForgotPasswordModal()">
+                                            <i class="bi bi-key"></i> Change Password
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="showSection('notices')">
+                                            <i class="bi bi-megaphone"></i> View Notices
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="showSection('myfees')">
+                                            <i class="bi bi-credit-card"></i> View Fee Status
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Fee Status Section -->
+                <div id="myfees" class="dashboard-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold">My Fee Status</h6>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshMyFees()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="myFeesContent">
+                                <!-- Dynamic content will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Room Management Modal -->
+    <div class="modal fade" id="roomManagementModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Room Management</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <button class="btn btn-primary w-100" onclick="showAddRoomModal()">
+                                <i class="bi bi-plus"></i> Add New Room
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-info w-100" onclick="loadRoomManagement()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Room Number</th>
+                                    <th>Floor</th>
+                                    <th>Sharing Type</th>
+                                    <th>Occupied</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roomManagementTable">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Room Modal -->
+    <div class="modal fade" id="addRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addRoomForm">
+                        <div class="mb-3">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" id="roomNumber" placeholder="101" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Floor</label>
+                            <select class="form-select" id="roomFloor" required>
+                                <option value="1">Floor 1</option>
+                                <option value="2">Floor 2</option>
+                                <option value="3">Floor 3</option>
+                                <option value="4">Floor 4</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sharing Type</label>
+                            <select class="form-select" id="roomSharingType" required>
+                                <option value="2-sharing">2-sharing (Capacity: 2)</option>
+                                <option value="4-sharing">4-sharing (Capacity: 4)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addRoom()">Add Room</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Room Modal -->
+    <div class="modal fade" id="editRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRoomForm">
+                        <input type="hidden" id="editRoomNumber">
+                        <div class="mb-3">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" id="editRoomNumberDisplay" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Floor</label>
+                            <select class="form-select" id="editRoomFloor" required>
+                                <option value="1">Floor 1</option>
+                                <option value="2">Floor 2</option>
+                                <option value="3">Floor 3</option>
+                                <option value="4">Floor 4</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sharing Type</label>
+                            <select class="form-select" id="editRoomSharingType" required>
+                                <option value="2-sharing">2-sharing (Capacity: 2)</option>
+                                <option value="4-sharing">4-sharing (Capacity: 4)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="editRoomStatus" required>
+                                <option value="available">Available</option>
+                                <option value="maintenance">Under Maintenance</option>
+                                <option value="out_of_order">Out of Order</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateRoom()">Update Room</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addStudentForm">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="studentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="studentEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">USN (University Seat Number)</label>
+                            <input type="text" class="form-control" id="studentUSN" placeholder="4YG23CS300" pattern="4YG[0-9]{2}[A-Z]{2}[0-9]{3}" title="Format: 4YG23CS300" required>
+                            <div class="form-text">Format: 4YG[Batch][Branch][Number] - Examples: 4YG23CS300, 4YG24IT123, 4YG25EC456</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="studentPhone" pattern="[0-9]{10}" title="Enter 10-digit phone number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Parent/Guardian Phone</label>
+                            <input type="tel" class="form-control" id="studentParentPhone" pattern="[0-9]{10}" title="Enter 10-digit phone number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="studentAddress" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Room Number</label>
+                            <select class="form-select" id="studentRoom">
+                                <option value="">Select Room</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addStudent()">Add Student</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Notice Modal -->
+    <div class="modal fade" id="addNoticeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Notice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addNoticeForm">
+                        <div class="mb-3">
+                            <label class="form-label">Notice Title</label>
+                            <input type="text" class="form-control" id="noticeTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notice Content</label>
+                            <textarea class="form-control" id="noticeContent" rows="4" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addNotice()">Add Notice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Room Modal -->
+    <div class="modal fade" id="assignRoomModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="assignRoomForm">
+                        <div class="mb-3">
+                            <label class="form-label">Select Student</label>
+                            <select class="form-select" id="assignStudentEmail" required>
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" id="assignRoomNumber" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="assignRoom()">Assign Room</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Fee Modal -->
+    <div class="modal fade" id="editFeeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Fee Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editFeeForm">
+                        <input type="hidden" id="editFeeId">
+                        <div class="mb-3">
+                            <label class="form-label">Student Name</label>
+                            <input type="text" class="form-control" id="editStudentNameView" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Total Fee (₹)</label>
+                            <input type="number" class="form-control" id="editTotalFee" min="0" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Paid Amount (₹)</label>
+                            <input type="number" class="form-control" id="editPaidAmount" min="0" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fee Status</label>
+                            <select class="form-select" id="editFeeStatus">
+                                <option value="Pending">Pending</option>
+                                <option value="Paid">Paid</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-info">
+                            <small><strong>Note:</strong> The due amount will be calculated automatically as (Total Fee - Paid Amount)</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateFee()">Update Fee</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Student Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editStudentForm">
+                        <input type="hidden" id="editStudentId">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="editStudentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="editStudentEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Room Number</label>
+                            <input type="text" class="form-control" id="editStudentRoom">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fee Status</label>
+                            <select class="form-select" id="editStudentFeesStatus">
+                                <option value="Pending">Pending</option>
+                                <option value="Paid">Paid</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateStudent()">Update Student</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Add Visitor Modal -->
+    <div class="modal fade" id="addVisitorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Visitor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addVisitorForm">
+                        <div class="mb-3">
+                            <label class="form-label">Visitor Name</label>
+                            <input type="text" class="form-control" id="visitorName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Visitor Phone</label>
+                            <input type="tel" class="form-control" id="visitorPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Visitor ID Type</label>
+                            <select class="form-select" id="visitorIdType" required>
+                                <option value="">Select ID Type</option>
+                                <option value="aadhar">Aadhar Card</option>
+                                <option value="driving_license">Driving License</option>
+                                <option value="passport">Passport</option>
+                                <option value="voter_id">Voter ID</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ID Number</label>
+                            <input type="text" class="form-control" id="visitorIdNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Student</label>
+                            <select class="form-select" id="visitorStudent" required>
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Purpose of Visit</label>
+                            <select class="form-select" id="visitorPurpose" required>
+                                <option value="">Select Purpose</option>
+                                <option value="family_visit">Family Visit</option>
+                                <option value="friend_visit">Friend Visit</option>
+                                <option value="official">Official</option>
+                                <option value="delivery">Delivery</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Details</label>
+                            <textarea class="form-control" id="visitorDetails" rows="3" placeholder="Any additional information..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expected Duration (hours)</label>
+                            <input type="number" class="form-control" id="visitorDuration" min="1" max="24" value="2">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addVisitor()">Add Visitor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Visitor Modal -->
+    <div class="modal fade" id="editVisitorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Visitor Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editVisitorForm">
+                        <input type="hidden" id="editVisitorId">
+                        <div class="mb-3">
+                            <label class="form-label">Visitor Name</label>
+                            <input type="text" class="form-control" id="editVisitorName" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Student</label>
+                            <input type="text" class="form-control" id="editVisitorStudent" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Purpose</label>
+                            <input type="text" class="form-control" id="editVisitorPurpose" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Entry Time</label>
+                            <input type="text" class="form-control" id="editVisitorEntryTime" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="editVisitorStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="inside">Inside</option>
+                                <option value="left">Left</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Exit Time</label>
+                            <input type="datetime-local" class="form-control" id="editVisitorExitTime">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" id="editVisitorNotes" rows="3" placeholder="Add any notes about the visit..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateVisitor()">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Visitor Modal -->
+    <div class="modal fade" id="viewVisitorModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Visitor Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Visitor ID:</strong> <span id="viewVisitorId"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong> <span id="viewVisitorStatus"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Visitor Name:</strong> <span id="viewVisitorName"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Phone:</strong> <span id="viewVisitorPhone"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>ID Type:</strong> <span id="viewVisitorIdType"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>ID Number:</strong> <span id="viewVisitorIdNumber"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Student:</strong> <span id="viewVisitorStudent"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Purpose:</strong> <span id="viewVisitorPurpose"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Entry Time:</strong> <span id="viewVisitorEntryTime"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Exit Time:</strong> <span id="viewVisitorExitTime"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Additional Details:</strong>
+                        <p id="viewVisitorDetails"></p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Notes:</strong>
+                        <p id="viewVisitorNotes"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editVisitorFromView()">Edit Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Profile Modal -->
+    <div class="modal fade" id="updateProfileModal" tabindex="-1" aria-labelledby="updateProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="updateProfileModalLabel">Update Profile</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="updateProfileForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="updateName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="updateName" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="updateEmail" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="updateEmail" required />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="updateUSN" class="form-label">USN (Read Only)</label>
+                                <input type="text" class="form-control" id="updateUSN" readonly />
+                                <div class="form-text">USN cannot be changed</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="updatePhone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="updatePhone" pattern="[0-9]{10}" title="Enter 10-digit phone number" required />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="updateAddress" class="form-label">Address <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="updateAddress" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="updateParentPhone" class="form-label">Parent/Guardian Phone <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="updateParentPhone" pattern="[0-9]{10}" title="Enter 10-digit phone number" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="updateRoomNumber" class="form-label">Room Number (Read Only)</label>
+                                <input type="text" class="form-control" id="updateRoomNumber" readonly />
+                                <div class="form-text">Room assignment managed by warden</div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Update Profile</button>
+                        <div id="updateProfileMessage" class="mt-2 text-danger"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="forgotPasswordModalLabel">Change Password</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="forgotPasswordForm">
+                        <div class="mb-3">
+                            <label for="forgotEmail" class="form-label">Email address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="forgotEmail" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="forgotUSN" class="form-label">USN (University Seat Number) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="forgotUSN" placeholder="4YG23CS300" pattern="4YG[0-9]{2}[A-Z]{2}[0-9]{3}" title="Format: 4YG23CS300" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="newPassword" minlength="6" required />
+                            <div class="form-text">Password must be at least 6 characters long</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmNewPassword" class="form-label">Confirm New Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="confirmNewPassword" minlength="6" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Change Password</button>
+                        <div id="forgotPasswordMessage" class="mt-2 text-danger"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
