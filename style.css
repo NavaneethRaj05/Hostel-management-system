@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&display=swap');
+
+.navbar_image {
+    height: 50px;
+    width: 140px;
+    padding: 5px;
+}
+
+.h-picture {
+    background-image: url("https://image2url.com/images/1757088595138-b7ad8159-cae9-4643-baa4-114bceda42d4.jpeg");
+    opacity: 0.5;
+    background-size: cover;
+    height: 100vh;
+}
+
+.h-head {
+    font-family: "Roboto";
+    color: white;
+    padding-top: 500px;
+
+}
+
+.h-para {
+    font-family: "Sans-Serif";
+    color: white;
+
+}
+
+.a-home-section {
+    background-color: white;
+    height: auto;
+    width: 100%;
+}
+
+.a-tabular {
+    height: auto;
+    width: 80%;
+    background-color: white;
+    border-radius: 25px;
+    border-color: grey;
+    border-width: 3px;
+    border-style: solid;
+}
+
+.a-head {
+    font-family: Sans-Serif;
+    text-align: center;
+}
+
+.facility-tab {
+    height: auto;
+    width: 30%;
+    background-color: #000080;
+    border-radius: 15px;
+    border-color: white;
+    border-width: 3px;
+    border-style: solid;
+}
+
+.last-sec {
+    background-color: #ffa500;
+    height: auto;
+    width: 100%;
+
+}
+
+.c-home {
+    font-family: "Roboto";
+
+}
+
+/* Smooth scroll for in-page anchor navigation */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Offset anchors so headings are not hidden under fixed navbar */
+#Home,
+#About,
+#Facility,
+#Contact {
+    scroll-margin-top: 90px;
+}
