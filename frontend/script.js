@@ -262,4 +262,147 @@ function showForgotPasswordModal() {
 
 window.hostelApi = { registerUser, loginUser };
 
+// Guest Chatbot Logic
+let guestChatHistory = [];
 
+document.addEventListener('DOMContentLoaded', function() {
+    const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const chatCloseBtn = document.getElementById('chat-close-btn');
+    const chatWindow = document.getElementById('chat-window');
+    const toggleIcon = document.getElementById('toggle-icon');
+    const chatForm = document.getElementById('chat-input-form');
+    const chatMessages = document.getElementById('chat-messages');
+    const messageInput = document.getElementById('chat-message-input');
+
+    if (chatToggleBtn && chatWindow) {
+        chatToggleBtn.addEventListener('click', function() {
+            if (chatWindow.classList.contains('d-none')) {
+                chatWindow.classList.remove('d-none');
+                toggleIcon.className = 'bi bi-x-lg fs-3';
+                messageInput.focus();
+                scrollToBottom();
+            } else {
+                chatWindow.classList.add('d-none');
+                toggleIcon.className = 'bi bi-chat-dots-fill fs-3';
+            }
+        });
+    }
+
+    if (chatCloseBtn && chatWindow) {
+        chatCloseBtn.addEventListener('click', function() {
+            chatWindow.classList.add('d-none');
+            if (toggleIcon) toggleIcon.className = 'bi bi-chat-dots-fill fs-3';
+        });
+    }
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            messageInput.value = '';
+            await sendChatToAPI(message);
+        });
+    }
+
+    async function sendChatToAPI(message) {
+        // Render user message
+        appendMessage(message, 'user');
+        scrollToBottom();
+
+        // Show typing indicator
+        showTypingIndicator();
+        scrollToBottom();
+
+        try {
+            const res = await fetch(`${API_BASE}/ai/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: message,
+                    history: guestChatHistory
+                })
+            });
+
+            removeTypingIndicator();
+
+            if (res.ok) {
+                const data = await res.json();
+                appendMessage(data.text, 'bot');
+                
+                // Save to history
+                guestChatHistory.push({ sender: 'user', text: message });
+                guestChatHistory.push({ sender: 'bot', text: data.text });
+            } else {
+                appendMessage('Sorry, I am having trouble connecting to the backend service. Please try again.', 'bot');
+            }
+        } catch (error) {
+            console.error('Chat error:', error);
+            removeTypingIndicator();
+            appendMessage('Network error. Please make sure the backend server is running.', 'bot');
+        }
+        scrollToBottom();
+    }
+
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'd-flex mb-2' + (sender === 'user' ? ' justify-content-end' : '');
+        
+        const bubble = document.createElement('div');
+        bubble.className = sender === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot';
+        
+        // Clean markdown code blocks if any, replace newlines with br for vanilla layout
+        bubble.innerHTML = formatChatText(text);
+        
+        msgDiv.appendChild(bubble);
+        chatMessages.appendChild(msgDiv);
+    }
+
+    function formatChatText(text) {
+        // Escape HTML
+        let escaped = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        
+        // Bold formatting
+        escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Newlines to br
+        return escaped.replace(/\n/g, '<br>');
+    }
+
+    function showTypingIndicator() {
+        const indicatorDiv = document.createElement('div');
+        indicatorDiv.className = 'd-flex mb-2';
+        indicatorDiv.id = 'typing-indicator-container';
+        indicatorDiv.innerHTML = `
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+        chatMessages.appendChild(indicatorDiv);
+    }
+
+    function removeTypingIndicator() {
+        const indicator = document.getElementById('typing-indicator-container');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Expose quick query sender globally
+    window.sendGuestQuickMsg = async function(message) {
+        await sendChatToAPI(message);
+    };
+});

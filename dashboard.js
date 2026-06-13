@@ -111,6 +111,8 @@ function addStudentNavigation() {
 function showWardenDashboard() {
     // All sections are available for warden
     document.getElementById('pageTitle').textContent = 'Warden Dashboard';
+    const staffLink = document.getElementById('nav-staff-assistant');
+    if (staffLink) staffLink.style.display = 'block';
 }
 
 // Update overview for student view
@@ -127,12 +129,17 @@ function updateStudentOverview() {
     document.getElementById('pendingFees').textContent = currentUser.feesStatus || 'Pending';
     document.getElementById('activeNotices').textContent = dashboardData.notices.length;
 
+    // Show AI billing summary button for students
+    const aiBtnContainer = document.getElementById('aiSummaryBtnContainer');
+    if (aiBtnContainer) aiBtnContainer.style.display = 'block';
+
     // Update recent students table for student view
     updateStudentProfileTable();
     
     // Update recent notices
     updateRecentNotices();
 }
+
 
 // Update student profile table
 function updateStudentProfileTable() {
@@ -445,7 +452,7 @@ async function loadComplaints() {
 function setupComplaintForm() {
     const form = document.getElementById('complaintForm');
     if (!form) return;
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         const type = document.getElementById('complaintType')?.value || 'other';
         const subject = document.getElementById('complaintSubject').value.trim();
@@ -455,6 +462,31 @@ function setupComplaintForm() {
             message.textContent = 'Please provide subject and a description of at least 10 characters.';
             return;
         }
+
+        // Show a loading text while classifying
+        message.textContent = 'Classifying complaint priority with AI...';
+        message.className = 'text-info';
+
+        let urgency = 'low';
+        let category = type;
+        let justification = '';
+
+        try {
+            const res = await fetch(`${API_BASE}/ai/classify-complaint`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject, description })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                urgency = data.urgency || 'low';
+                category = data.category || type;
+                justification = data.justification || '';
+            }
+        } catch (err) {
+            console.warn('AI classification failed, falling back to low urgency:', err);
+        }
+
         const list = getStoredComplaints();
         const id = 'C' + Date.now();
         list.push({
@@ -465,13 +497,16 @@ function setupComplaintForm() {
             subject,
             description,
             status: 'pending',
-            date: new Date().toISOString()
+            date: new Date().toISOString(),
+            urgency,
+            category,
+            justification
         });
         setStoredComplaints(list);
         form.reset();
-        message.classList.remove('text-danger');
+        message.classList.remove('text-danger', 'text-info');
         message.classList.add('text-success');
-        message.textContent = 'Complaint submitted successfully.';
+        message.textContent = 'Complaint submitted successfully (AI Urgency: ' + urgency.toUpperCase() + ').';
         refreshComplaints();
     });
 }
@@ -480,21 +515,55 @@ function setupComplaintForm() {
 function renderComplaintsTable() {
     const tbody = document.getElementById('complaintsTable');
     if (!tbody) return;
-    const list = dashboardData.complaints || [];
+    let list = dashboardData.complaints || [];
     if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No complaints found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No complaints found</td></tr>';
         return;
     }
+
+    // Sort complaints: critical/high at the top
+    const priorityWeight = {
+        'critical': 4,
+        'high': 3,
+        'medium': 2,
+        'low': 1
+    };
+    list = [...list].sort((a, b) => {
+        const weightA = priorityWeight[a.urgency?.toLowerCase()] || 1;
+        const weightB = priorityWeight[b.urgency?.toLowerCase()] || 1;
+        return weightB - weightA;
+    });
+
     tbody.innerHTML = '';
     list.forEach(c => {
         const tr = document.createElement('tr');
+        
+        let urgencyBadge = '';
+        const urgency = c.urgency || 'low';
+        switch (urgency.toLowerCase()) {
+            case 'critical':
+                urgencyBadge = `<span class="badge bg-danger text-uppercase px-2 py-1" style="font-size:0.75rem;" title="${c.justification || 'Critical priority.'}"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical</span>`;
+                break;
+            case 'high':
+                urgencyBadge = `<span class="badge bg-warning text-dark text-uppercase px-2 py-1" style="font-size:0.75rem;" title="${c.justification || 'High priority.'}">High</span>`;
+                break;
+            case 'medium':
+                urgencyBadge = `<span class="badge bg-info text-dark text-uppercase px-2 py-1" style="font-size:0.75rem;" title="${c.justification || 'Medium priority.'}">Medium</span>`;
+                break;
+            case 'low':
+            default:
+                urgencyBadge = `<span class="badge bg-secondary text-uppercase px-2 py-1" style="font-size:0.75rem;" title="${c.justification || 'Low priority.'}">Low</span>`;
+                break;
+        }
+
         tr.innerHTML = `
             <td><span class="badge bg-primary">${c.id}</span></td>
             <td>${c.studentName}</td>
+            <td>${urgencyBadge}</td>
             <td><span class="badge bg-secondary">${(c.type || 'other').replace('_',' ')}</span></td>
             <td>${c.subject}</td>
             <td>${new Date(c.date).toLocaleDateString()}</td>
-            <td><span class="badge ${c.status === 'pending' ? 'bg-warning' : 'bg-success'}">${c.status}</span></td>
+            <td><span class="badge ${c.status === 'pending' ? 'bg-warning text-dark' : 'bg-success'}">${c.status}</span></td>
             <td>
                 ${currentUser?.role === 'warden' ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteComplaint('${c.id}')"><i class="bi bi-trash"></i></button>` : ''}
             </td>
@@ -737,6 +806,13 @@ function updateOverview() {
         
         // Update recent notices
         updateRecentNotices();
+
+        // Show monthly report button for Warden
+        const monthlyReportBtn = document.getElementById('btn-monthly-report');
+        if (monthlyReportBtn) monthlyReportBtn.style.display = 'inline-block';
+
+        // Load AI attendance anomalies alerts
+        loadAttendanceAlerts();
     }
 }
 
@@ -945,7 +1021,7 @@ function renderOutpassApprovalTable(rows) {
     const tbody = document.getElementById('outpassApprovalTable');
     if (!tbody) return;
     if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No requests</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No requests</td></tr>';
         return;
     }
     tbody.innerHTML = '';
@@ -956,6 +1032,7 @@ function renderOutpassApprovalTable(rows) {
             <td>${r.studentName} <small class="text-muted">(${r.studentId})</small></td>
             <td>${r.fromDate} → ${r.toDate}</td>
             <td>${r.reason}</td>
+            <td id="risk-${r.id}"><span class="text-muted small"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Analyzing...</span></td>
             <td><span class="badge ${r.status==='approved'?'bg-success':r.status==='rejected'?'bg-danger':'bg-warning'}">${r.status}</span></td>
             <td>
                 <div class="btn-group">
@@ -971,6 +1048,8 @@ function renderOutpassApprovalTable(rows) {
             </td>
         `;
         tbody.appendChild(tr);
+        // Load the risk assessment asynchronously
+        fetchOutpassRiskScore(r);
     });
 }
 
@@ -1042,7 +1121,8 @@ function showSection(sectionName, el) {
         'visitors': 'Visitor Management',
         'profile': 'My Profile',
         'myfees': 'My Fee Status',
-        'mygrievances': 'Submit Request'
+        'mygrievances': 'Submit Request',
+        'staff-assistant': 'Staff AI RAG Assistant'
     };
     document.getElementById('pageTitle').textContent = titles[sectionName] || 'Dashboard';
     
@@ -1106,6 +1186,14 @@ function showSection(sectionName, el) {
                 showSection('overview');
             }
             break;
+        case 'staff-assistant':
+            // Only allow warden access to staff assistant
+            if (currentUser.role === 'warden') {
+                // View is passive, user initiates via input
+            } else {
+                showSection('overview');
+            }
+            break;
         case 'profile':
             updateStudentProfile();
             break;
@@ -1117,6 +1205,7 @@ function showSection(sectionName, el) {
             break;
         // Removed mygrievances feature
     }
+
 }
 
 // Update students table with pagination
@@ -1133,6 +1222,9 @@ function updateStudentsTable() {
             <td>${student.roomNumber || 'Not assigned'}</td>
             <td><span class="badge ${student.feesStatus === 'Paid' ? 'bg-success' : 'bg-warning'}">${student.feesStatus || 'Pending'}</span></td>
             <td>
+                <button class="btn btn-sm btn-outline-info me-1" onclick="generateAISummary('${student.usn || student.id}')">
+                    <i class="bi bi-robot"></i> AI Summary
+                </button>
                 <button class="btn btn-sm btn-outline-primary" onclick="editStudent('${student.id}')">
                     <i class="bi bi-pencil"></i>
                 </button>
@@ -1143,6 +1235,7 @@ function updateStudentsTable() {
         `;
         tbody.appendChild(row);
     });
+
     
     // Update pagination info
     updatePaginationInfo();
@@ -1304,6 +1397,9 @@ function updateFeesTable() {
             <td>₹${fee.due.toLocaleString()}</td>
             <td><span class="badge ${fee.status === 'Paid' ? 'bg-success' : 'bg-warning'}">${fee.status}</span></td>
             <td>
+                <button class="btn btn-sm btn-outline-info me-1" onclick="generateAISummary('${fee.id}')">
+                    <i class="bi bi-robot"></i> AI Summary
+                </button>
                 <button class="btn btn-sm btn-outline-primary me-1" onclick="showEditFeeModal('${fee.id}')">
                     <i class="bi bi-pencil"></i> Edit
                 </button>
@@ -1317,6 +1413,7 @@ function updateFeesTable() {
         tbody.appendChild(row);
     });
 }
+
 
 // Update notices list
 function updateNoticesList() {
@@ -3699,3 +3796,492 @@ document.addEventListener('DOMContentLoaded', function() {
     setupUpdateProfileForm();
     // Grievance form removed; complaints form is set up when showing complaints
 });
+
+// Global AI states
+let activeBillingSummaryStudentId = null;
+let staffChatHistory = [];
+
+async function generateStudentAISummary() {
+    let studentId = currentUser.usn || currentUser.id || '';
+    if (!studentId && currentUser.email) {
+        const student = dashboardData.students.find(s => s.email === currentUser.email);
+        if (student) studentId = student.usn || student.id;
+    }
+    if (!studentId) {
+        alert("Could not determine your USN. Please relogin.");
+        return;
+    }
+    generateAISummary(studentId);
+}
+
+async function generateAISummary(studentId) {
+    activeBillingSummaryStudentId = studentId;
+    
+    // Show Modal
+    const modalEl = document.getElementById('aiBillingSummaryModal');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (!modalInstance) {
+        modalInstance = new bootstrap.Modal(modalEl);
+    }
+    modalInstance.show();
+    
+    const loading = document.getElementById('aiSummaryLoading');
+    const content = document.getElementById('aiSummaryContent');
+    const summaryText = document.getElementById('aiSummaryText');
+    
+    loading.classList.remove('d-none');
+    content.classList.add('d-none');
+    
+    try {
+        const res = await fetch(`${API_BASE}/ai/billing-summary/${encodeURIComponent(studentId)}`);
+        if (!res.ok) throw new Error(`Server error: status ${res.status}`);
+        
+        const data = await res.json();
+        
+        loading.classList.add('d-none');
+        content.classList.remove('d-none');
+        
+        // Find student in dashboardData to display registry details or use fallback from db response
+        const student = dashboardData.students.find(s => (s.usn || s.id || '').toUpperCase() === studentId.toUpperCase()) || {};
+        
+        document.getElementById('aiSumStudentName').textContent = student.name || 'N/A';
+        document.getElementById('aiSumStudentUSN').textContent = studentId;
+        document.getElementById('aiSumStudentRoom').textContent = student.roomNumber || 'Not Assigned';
+        
+        const statusBadge = document.getElementById('aiSumStudentStatus');
+        statusBadge.textContent = student.feesStatus || 'Pending';
+        if (student.feesStatus === 'Paid') {
+            statusBadge.className = 'badge bg-success';
+        } else {
+            statusBadge.className = 'badge bg-warning text-dark';
+        }
+        
+        // Render AI summary
+        if (data.data) {
+            const bill = data.data;
+            const totalFee = (bill.amountPaid || 0) + (bill.amountDue || 0);
+            const paidPercent = totalFee > 0 ? Math.round((bill.amountPaid / totalFee) * 100) : 0;
+            
+            summaryText.innerHTML = `
+                <div class="row mb-3 align-items-center">
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small fw-semibold">Payment Progress</span>
+                            <span class="fw-bold small text-primary">${paidPercent}% Paid</span>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: ${paidPercent}%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" aria-valuenow="${paidPercent}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="d-inline-block p-2 rounded bg-light border" style="font-size: 0.85rem; border-radius: 8px !important;">
+                            <div><strong>Paid:</strong> <span class="text-success fw-bold">INR ${bill.amountPaid?.toLocaleString() || 0}</span></div>
+                            <div><strong>Due:</strong> <span class="text-danger fw-bold">INR ${bill.amountDue?.toLocaleString() || 0}</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3 border-bottom pb-2">
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;"><i class="bi bi-wallet2 me-1 text-primary"></i> Fee Breakdown & Coverage</h6>
+                    <p class="text-secondary small mb-0">${bill.paymentDetails || 'No additional payment details available.'}</p>
+                </div>
+                
+                <div class="mb-3 border-bottom pb-2">
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;"><i class="bi bi-calendar-check me-1 text-info"></i> Residence & Attendance Analysis</h6>
+                    <p class="text-secondary small mb-0">${bill.attendanceSummary || 'No attendance records available.'}</p>
+                </div>
+                
+                <div class="p-3 bg-light border-start border-primary border-3 rounded shadow-sm" style="border-radius: 0 12px 12px 0 !important;">
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;"><i class="bi bi-lightbulb me-1 text-warning"></i> AI Action Recommendation</h6>
+                    <p class="text-dark small mb-0 fw-semibold">${bill.recommendation || 'Please check dues with the administration.'}</p>
+                </div>
+            `;
+        } else {
+            summaryText.innerHTML = formatMarkdown(data.text || JSON.stringify(data));
+        }
+    } catch (error) {
+        console.error('Failed to load AI billing summary:', error);
+        loading.classList.add('d-none');
+        content.classList.remove('d-none');
+        
+        document.getElementById('aiSumStudentName').textContent = 'Error';
+        document.getElementById('aiSumStudentUSN').textContent = studentId;
+        document.getElementById('aiSumStudentRoom').textContent = '-';
+        document.getElementById('aiSumStudentStatus').textContent = 'Error';
+        
+        summaryText.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Failed to generate AI Summary. Please ensure your Groq API key is valid and connected.</span>`;
+    }
+}
+
+function regenerateBillingSummary() {
+    if (activeBillingSummaryStudentId) {
+        generateAISummary(activeBillingSummaryStudentId);
+    }
+}
+
+// Staff Assistant Chat Handlers
+function sendStaffQuery(query) {
+    const input = document.getElementById('staffChatInput');
+    if (input) {
+        input.value = query;
+        const form = document.getElementById('staffChatForm');
+        if (form) {
+            // Programmatically submit the form
+            handleStaffChatSubmit();
+        }
+    }
+}
+
+async function handleStaffChatSubmit(event) {
+    if (event) event.preventDefault();
+    
+    const input = document.getElementById('staffChatInput');
+    const sendBtn = document.getElementById('staffChatSendBtn');
+    const chatOutput = document.getElementById('staffChatOutput');
+    
+    if (!input) return;
+    const query = input.value.trim();
+    if (!query) return;
+    
+    input.value = '';
+    input.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+    
+    // Append user message
+    appendStaffMessage(query, 'user');
+    scrollToStaffBottom();
+    
+    // Show typing indicator
+    showStaffTyping();
+    scrollToStaffBottom();
+    
+    try {
+        const res = await fetch(`${API_BASE}/ai/staff-assistant`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: query,
+                history: staffChatHistory
+            })
+        });
+        
+        removeStaffTyping();
+        
+        if (res.ok) {
+            const data = await res.json();
+            appendStaffMessage(data.text, 'bot');
+            
+            // Add to history
+            staffChatHistory.push({ sender: 'user', text: query });
+            staffChatHistory.push({ sender: 'bot', text: data.text });
+        } else {
+            appendStaffMessage('Error: Failed to fetch response from Staff AI endpoint.', 'bot');
+        }
+    } catch (error) {
+        console.error('Staff AI Error:', error);
+        removeStaffTyping();
+        appendStaffMessage('Network error: Could not reach backend server.', 'bot');
+    }
+    
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+    scrollToStaffBottom();
+}
+
+function appendStaffMessage(text, sender) {
+    const chatOutput = document.getElementById('staffChatOutput');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'd-flex mb-3' + (sender === 'user' ? ' justify-content-end' : '');
+    
+    const bubble = document.createElement('div');
+    bubble.className = sender === 'user' ? 'chat-bubble-user shadow-xs' : 'chat-bubble-bot shadow-xs';
+    
+    // Style bot bubble separately for grounded manual appearance
+    if (sender === 'bot') {
+        bubble.style.backgroundColor = '#f8fafc';
+        bubble.style.border = '1px solid #e2e8f0';
+        bubble.style.color = '#1e293b';
+        bubble.style.borderRadius = '16px 16px 16px 0';
+        bubble.style.padding = '12px 16px';
+        bubble.style.maxWidth = '80%';
+    } else {
+        bubble.style.borderRadius = '16px 16px 0 16px';
+        bubble.style.padding = '12px 16px';
+        bubble.style.maxWidth = '80%';
+    }
+    
+    bubble.innerHTML = formatMarkdown(text);
+    msgDiv.appendChild(bubble);
+    chatOutput.appendChild(msgDiv);
+}
+
+function showStaffTyping() {
+    const chatOutput = document.getElementById('staffChatOutput');
+    const indicatorDiv = document.createElement('div');
+    indicatorDiv.className = 'd-flex mb-3';
+    indicatorDiv.id = 'staff-typing-indicator';
+    indicatorDiv.innerHTML = `
+        <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    `;
+    chatOutput.appendChild(indicatorDiv);
+}
+
+function removeStaffTyping() {
+    const indicator = document.getElementById('staff-typing-indicator');
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+function scrollToStaffBottom() {
+    const chatOutput = document.getElementById('staffChatOutput');
+    if (chatOutput) {
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+}
+
+function formatMarkdown(text) {
+    if (!text) return '';
+    // Escape HTML partially to prevent broken elements but allow formatting
+    let escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // Table parser
+    const tableRegex = /((?:\|[^\n]+\|\r?\n)+)/g;
+    escaped = escaped.replace(tableRegex, (match) => {
+        const lines = match.trim().split('\n');
+        let html = '<div class="table-responsive"><table class="table table-bordered table-striped mt-2 mb-3">';
+        
+        lines.forEach((line, index) => {
+            if (line.includes('---')) return; // skip delimiter row
+            
+            const cells = line.split('|').map(c => c.trim()).filter((c, i, arr) => i > 0 && i < arr.length - 1);
+            
+            if (cells.length > 0) {
+                html += '<tr>';
+                cells.forEach(cell => {
+                    const tag = (index === 0) ? 'th' : 'td';
+                    html += `<${tag}>${cell}</${tag}>`;
+                });
+                html += '</tr>';
+            }
+        });
+        
+        html += '</table></div>';
+        return html;
+    });
+
+    // Headings
+    escaped = escaped.replace(/^### (.*?)$/gm, '<h6 class="fw-bold mt-3 mb-2 text-dark">$1</h6>');
+    escaped = escaped.replace(/^## (.*?)$/gm, '<h5 class="fw-bold mt-3 mb-2 text-dark">$1</h5>');
+    escaped = escaped.replace(/^# (.*?)$/gm, '<h4 class="fw-bold mt-3 mb-2 text-dark">$1</h4>');
+
+    // Bold
+    escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Bullet points
+    escaped = escaped.replace(/^\* (.*?)$/gm, '<li>$1</li>');
+    escaped = escaped.replace(/^- (.*?)$/gm, '<li>$1</li>');
+    
+    // Wrap list items in ul
+    escaped = escaped.replace(/(<li>.*?<\/li>)+/gs, '<ul>$&</ul>');
+
+    // Newlines to br
+    return escaped.replace(/\n/g, '<br>');
+}
+
+// AI Notice Board Polisher
+async function polishNoticeDraft() {
+    const titleInput = document.getElementById('noticeTitle');
+    const contentInput = document.getElementById('noticeContent');
+    const loader = document.getElementById('polishNoticeLoader');
+    const btnGroup = document.getElementById('polishNoticeBtnGroup');
+
+    if (!titleInput || !contentInput) return;
+
+    const title = titleInput.value.trim();
+    const body = contentInput.value.trim();
+
+    if (!title || !body) {
+        alert('Please fill in both the title and content first to let the AI polish it.');
+        return;
+    }
+
+    if (loader) loader.style.display = 'block';
+    if (btnGroup) btnGroup.style.display = 'none';
+
+    try {
+        const res = await fetch(`${API_BASE}/ai/polish-notice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, body })
+        });
+        if (!res.ok) throw new Error('Failed to polish notice');
+        const data = await res.json();
+        if (data.title) titleInput.value = data.title;
+        if (data.body) contentInput.value = data.body;
+    } catch (err) {
+        console.error('Error polishing notice:', err);
+        alert('Failed to polish notice. Please try again.');
+    } finally {
+        if (loader) loader.style.display = 'none';
+        if (btnGroup) btnGroup.style.display = 'block';
+    }
+}
+
+// Attendance Anomaly Alerts Scanner
+async function loadAttendanceAlerts() {
+    const alertsContainer = document.getElementById('aiAlertsContainer');
+    const alertsSummary = document.getElementById('aiAlertsSummary');
+    const alertsGrid = document.getElementById('aiAlertsGrid');
+    
+    if (!alertsContainer || !alertsGrid) return;
+    
+    try {
+        const res = await fetch(`${API_BASE}/ai/attendance-alerts`);
+        if (!res.ok) throw new Error('Failed to fetch attendance alerts');
+        const data = await res.json();
+        
+        if (data.alerts && data.alerts.length > 0) {
+            alertsContainer.style.display = 'block';
+            if (alertsSummary) alertsSummary.textContent = data.summary || `AI Scanner flagged ${data.alerts.length} student(s) with attendance anomalies.`;
+            
+            alertsGrid.innerHTML = '';
+            data.alerts.forEach(alert => {
+                const card = document.createElement('div');
+                card.className = 'col-md-4';
+                card.innerHTML = `
+                    <div class="card shadow-sm border-0 border-start border-danger border-4 h-100 bg-white" style="border-radius: 12px;">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="fw-bold text-dark mb-0">${alert.name}</h6>
+                                <span class="badge bg-danger text-uppercase" style="font-size: 0.7rem;">Anomaly</span>
+                            </div>
+                            <div class="mb-2" style="font-size: 0.85rem;">
+                                <div><strong>USN:</strong> <span class="badge bg-secondary">${alert.usn}</span></div>
+                                <div><strong>Attendance Rate:</strong> <span class="text-danger fw-bold">${alert.rate}%</span></div>
+                                ${alert.consecutiveAbsences ? `<div><strong>Consecutive Absences:</strong> <span class="text-danger fw-bold">${alert.consecutiveAbsences} days</span></div>` : ''}
+                            </div>
+                            <div class="p-2 bg-light rounded" style="font-size: 0.82rem; border-left: 2px solid #dc3545; color: #495057;">
+                                <strong>AI Recommendation:</strong> ${alert.recommendation}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                alertsGrid.appendChild(card);
+            });
+        } else {
+            alertsContainer.style.display = 'none';
+        }
+    } catch (err) {
+        console.warn('Failed to load attendance alerts:', err);
+        alertsContainer.style.display = 'none';
+    }
+}
+
+// Outpass Risk Assessment
+async function fetchOutpassRiskScore(outpass) {
+    const riskCell = document.getElementById(`risk-${outpass.id}`);
+    if (!riskCell) return;
+    
+    try {
+        const res = await fetch(`${API_BASE}/ai/outpass-risk`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                studentId: outpass.studentId,
+                reason: outpass.reason,
+                fromDate: outpass.fromDate,
+                toDate: outpass.toDate
+            })
+        });
+        if (!res.ok) throw new Error('Network error');
+        const data = await res.json();
+        
+        let badgeClass = 'bg-secondary';
+        let levelText = 'Low Risk';
+        if (data.riskLevel === 'high') {
+            badgeClass = 'bg-danger';
+            levelText = 'Flagged';
+        } else if (data.riskLevel === 'medium') {
+            badgeClass = 'bg-warning text-dark';
+            levelText = 'Review Required';
+        } else {
+            badgeClass = 'bg-success';
+            levelText = 'Low Risk';
+        }
+        
+        riskCell.innerHTML = `<span class="badge ${badgeClass} text-uppercase px-2 py-1" style="font-size:0.75rem; cursor:pointer;" title="${data.justification || 'Analyzed by Warden AI.'}"><i class="bi bi-shield-fill me-1"></i>${levelText}</span>`;
+    } catch (err) {
+        console.warn('Failed to fetch risk score:', err);
+        riskCell.innerHTML = `<span class="badge bg-secondary text-uppercase px-2 py-1" style="font-size:0.75rem;">Analysis Error</span>`;
+    }
+}
+
+// Monthly Report Generator
+async function generateMonthlyAIReport() {
+    const modalEl = document.getElementById('aiMonthlyReportModal');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (!modalInstance) {
+        modalInstance = new bootstrap.Modal(modalEl);
+    }
+    modalInstance.show();
+    
+    const loading = document.getElementById('aiReportLoading');
+    const content = document.getElementById('aiReportContent');
+    const reportText = document.getElementById('aiReportText');
+    
+    if (loading) loading.classList.remove('d-none');
+    if (content) content.classList.add('d-none');
+    
+    try {
+        const res = await fetch(`${API_BASE}/ai/monthly-report`);
+        if (!res.ok) throw new Error('Failed to generate report');
+        const data = await res.json();
+        
+        if (loading) loading.classList.add('d-none');
+        if (content) content.classList.remove('d-none');
+        
+        if (reportText) reportText.innerHTML = formatMarkdown(data.text);
+    } catch (err) {
+        console.error('Error generating monthly report:', err);
+        if (loading) loading.classList.add('d-none');
+        if (content) content.classList.remove('d-none');
+        if (reportText) reportText.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Failed to generate AI Monthly Report. Please check your connection and try again.</span>`;
+    }
+}
+
+function printAIReport() {
+    const reportTextEl = document.getElementById('aiReportText');
+    if (!reportTextEl) return;
+    const reportContent = reportTextEl.innerHTML;
+    const printWindow = window.open('', '_blank', 'height=600,width=800');
+    
+    printWindow.document.write('<html><head><title>Hostel Monthly AI Executive Report</title>');
+    printWindow.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">');
+    printWindow.document.write('<style>body { padding: 40px; font-family: "Segoe UI", sans-serif; color: #333; } h1, h2, h3, h4 { color: #2c3e50; margin-top: 20px; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f2f2f2; } @media print { @page { margin: 2cm; } }</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write('<div class="container">');
+    printWindow.document.write('<div class="text-center mb-4"><img src="https://navkisce.ac.in/wp-content/uploads/2021/06/Logo-Navkis.png" alt="Navkis College Logo" style="max-height: 80px; margin-bottom:15px;" onerror="this.style.display=\\\'none\\\'"><h2>Navkis College of Engineering Hostel</h2><h4>AI Monthly Executive Report</h4></div>');
+    printWindow.document.write('<hr>');
+    printWindow.document.write(reportContent);
+    printWindow.document.write('</div>');
+    printWindow.document.write('</body></html>');
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
+}
+

@@ -19,6 +19,8 @@ const Student = require('./models/Student');
 const Notice = require('./models/Notice');
 const Room = require('./models/Room');
 const Outpass = require('./models/Outpass');
+const aiService = require('./services/ai');
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -817,8 +819,232 @@ app.delete('/api/room/:roomNumber', async (req, res) => {
   }
 });
 
+// AI Features Endpoints
+app.post('/api/ai/chat', async (req, res) => {
+  const { message, history } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+  try {
+    const result = await aiService.getChatbotResponse(message, history || []);
+    res.json(result);
+  } catch (error) {
+    console.error('Error in chatbot route:', error);
+    res.status(500).json({ error: 'Failed to process chatbot request' });
+  }
+});
+
+app.post('/api/ai/staff-assistant', async (req, res) => {
+  const { message, history } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+  try {
+    const result = await aiService.getStaffAssistantResponse(message, history || []);
+    res.json(result);
+  } catch (error) {
+    console.error('Error in staff assistant route:', error);
+    res.status(500).json({ error: 'Failed to process staff assistant request' });
+  }
+});
+
+app.get('/api/ai/billing-summary/:studentId', async (req, res) => {
+  try {
+    const student = await Student.findOne({ usn: req.params.studentId.toUpperCase() });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    
+    const room = await Room.findOne({ number: student.roomNumber });
+    
+    // Calculate attendance stats
+    const totalDays = student.attendance ? student.attendance.length : 0;
+    const presentCount = student.attendance ? student.attendance.filter(a => a.status === 'present').length : 0;
+    const attendanceStats = {
+      total: totalDays,
+      present: presentCount,
+      rate: totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0
+    };
+    
+    const result = await aiService.getBillingSummary(student, room, attendanceStats);
+    
+    // Parse result.text into JSON for structured rendering
+    try {
+      const parsedData = JSON.parse(result.text);
+      res.json({ data: parsedData, isMock: result.isMock });
+    } catch (parseError) {
+      console.warn('[Billing Summary] Failed to parse JSON, returning raw text:', parseError.message);
+      res.json({ text: result.text, isMock: result.isMock });
+    }
+  } catch (error) {
+    console.error('Error in billing summary route:', error);
+    res.status(500).json({ error: 'Failed to generate billing summary' });
+  }
+});
+
+app.post('/api/ai/classify-complaint', async (req, res) => {
+  const { subject, description } = req.body;
+  if (!subject || !description) {
+    return res.status(400).json({ error: 'Subject and description are required' });
+  }
+  try {
+    const result = await aiService.classifyComplaint(subject, description);
+    try {
+      res.json(JSON.parse(result.text));
+    } catch (err) {
+      res.json({ category: 'other', urgency: 'low', justification: 'Default classification due to parsing failure.' });
+    }
+  } catch (error) {
+    console.error('Error classifying complaint:', error);
+    res.status(500).json({ error: 'Failed to classify complaint' });
+  }
+});
+
+app.post('/api/ai/outpass-risk', async (req, res) => {
+  const { studentId, reason, fromDate, toDate } = req.body;
+  if (!studentId || !reason || !fromDate || !toDate) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+  try {
+    const student = await Student.findOne({ usn: studentId.toUpperCase() });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    const pastCount = await Outpass.countDocuments({ studentId: studentId.toUpperCase() });
+    const result = await aiService.getOutpassRisk(student, { reason, fromDate, toDate }, pastCount);
+    try {
+      res.json(JSON.parse(result.text));
+    } catch (err) {
+      res.json({ riskLevel: 'low', recommendation: 'approve', justification: 'Default risk scoring.' });
+    }
+  } catch (error) {
+    console.error('Error in outpass risk route:', error);
+    res.status(500).json({ error: 'Failed to assess outpass risk' });
+  }
+});
+
+app.post('/api/ai/polish-notice', async (req, res) => {
+  const { title, body } = req.body;
+  if (!title || !body) {
+    return res.status(400).json({ error: 'Title and body are required' });
+  }
+  try {
+    const result = await aiService.polishNotice(title, body);
+    try {
+      res.json(JSON.parse(result.text));
+    } catch (err) {
+      res.json({ title, body });
+    }
+  } catch (error) {
+    console.error('Error in notice polisher route:', error);
+    res.status(500).json({ error: 'Failed to polish notice' });
+  }
+});
+
+app.get('/api/ai/attendance-alerts', async (req, res) => {
+  try {
+    const students = await Student.find();
+    const flagged = [];
+    
+    students.forEach(student => {
+      const records = student.attendance || [];
+      const total = records.length;
+      if (total > 0) {
+        const present = records.filter(r => r.status === 'present').length;
+        const rate = Math.round((present / total) * 100);
+        
+        let consecutiveAbsences = 0;
+        let maxConsecutive = 0;
+        const sortedAtt = [...records].sort((a, b) => new Date(a.date) - new Date(b.date));
+        sortedAtt.forEach(r => {
+          if (r.status === 'absent') {
+            consecutiveAbsences++;
+            if (consecutiveAbsences > maxConsecutive) {
+              maxConsecutive = consecutiveAbsences;
+            }
+          } else {
+            consecutiveAbsences = 0;
+          }
+        });
+        
+        if (rate < 75 || maxConsecutive >= 3) {
+          flagged.push({
+            name: student.name,
+            usn: student.usn,
+            rate: rate,
+            consecutiveAbsences: maxConsecutive
+          });
+        }
+      }
+    });
+    
+    if (flagged.length === 0) {
+      return res.json({ summary: "AI scanned attendance registries. No anomalies detected.", alerts: [] });
+    }
+    
+    const result = await aiService.getAttendanceAlerts(flagged);
+    try {
+      res.json(JSON.parse(result.text));
+    } catch (err) {
+      res.json({ summary: "Failed to parse alerts from AI.", alerts: [] });
+    }
+  } catch (error) {
+    console.error('Error generating attendance alerts:', error);
+    res.status(500).json({ error: 'Failed to generate attendance alerts' });
+  }
+});
+
+app.get('/api/ai/monthly-report', async (req, res) => {
+  try {
+    const totalStudents = await Student.countDocuments();
+    const rooms = await Room.find();
+    const totalRooms = rooms.length;
+    const students = await Student.find();
+    
+    const roomOccupancy = {};
+    students.forEach(s => {
+      if (s.roomNumber && s.roomNumber !== 'Not Assigned') {
+        roomOccupancy[s.roomNumber] = (roomOccupancy[s.roomNumber] || 0) + 1;
+      }
+    });
+    const occupiedRoomsCount = Object.keys(roomOccupancy).length;
+    const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0);
+    const occupiedBeds = Object.values(roomOccupancy).reduce((sum, val) => sum + val, 0);
+    const occupancyRate = totalCapacity > 0 ? Math.round((occupiedBeds / totalCapacity) * 100) : 0;
+    
+    const totalDuesPending = students.filter(s => s.feesStatus !== 'Paid').length;
+    const totalRevenue = students.reduce((sum, s) => sum + (s.totalFee || 0), 0);
+    const totalCollected = students.reduce((sum, s) => sum + (s.paid || 0), 0);
+    const totalOutstanding = students.reduce((sum, s) => sum + (s.feesDue || 0), 0);
+    
+    const outpassCount = await Outpass.countDocuments();
+    const pendingOutpasses = await Outpass.countDocuments({ status: 'pending' });
+    
+    const stats = {
+      totalStudents,
+      totalRooms,
+      occupiedRoomsCount,
+      occupancyRate,
+      totalRevenue,
+      totalCollected,
+      totalOutstanding,
+      totalDuesPending,
+      outpassCount,
+      pendingOutpasses
+    };
+    
+    const result = await aiService.generateMonthlyReport(stats);
+    res.json({ text: result.text, isMock: result.isMock });
+  } catch (error) {
+    console.error('Error in monthly report route:', error);
+    res.status(500).json({ error: 'Failed to generate monthly report' });
+  }
+});
+
+
 // Serve static files
 app.use(express.static(__dirname));
+
 
 // Serve index.html for all non-API routes
 app.get('*', (req, res) => {

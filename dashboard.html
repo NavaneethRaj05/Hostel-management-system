@@ -136,11 +136,17 @@
                                 <i class="bi bi-box-arrow-up-right"></i> Outpass
                             </a>
                         </li>
+                        <li class="nav-item" id="nav-staff-assistant" style="display: none;">
+                            <a class="nav-link" href="#" onclick="showSection('staff-assistant')">
+                                <i class="bi bi-robot"></i> Staff Assistant
+                            </a>
+                        </li>
                         <li class="nav-item mt-3">
                             <a class="nav-link" href="#" onclick="logout()">
                                 <i class="bi bi-box-arrow-right"></i> Logout
                             </a>
                         </li>
+
                     </ul>
                 </div>
             </nav>
@@ -153,6 +159,9 @@
                         <div class="btn-group me-2">
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
                                 <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill ms-2" id="btn-monthly-report" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;" onclick="generateMonthlyAIReport()">
+                                <i class="bi bi-file-earmark-bar-graph me-1"></i> AI Monthly Report
                             </button>
                         </div>
                     </div>
@@ -200,6 +209,11 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-uppercase mb-1" id="stat3Label">Pending Fees</div>
                                             <div class="h5 mb-0 font-weight-bold" id="pendingFees">0</div>
+                                            <div id="aiSummaryBtnContainer" class="mt-2" style="display: none;">
+                                                <button class="btn btn-sm btn-light text-dark fw-bold rounded-pill" onclick="generateStudentAISummary()" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-robot me-1"></i> AI Summary
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-credit-card fs-2"></i>
@@ -208,6 +222,7 @@
                                 </div>
                             </div>
                         </div>
+
 
                         <div class="col-xl-3 col-md-6 mb-4">
                             <div class="card stat-card info h-100 py-2">
@@ -226,8 +241,30 @@
                         </div>
                     </div>
 
+                    <!-- AI Attendance Alerts Center (Warden Only) -->
+                    <div class="row mb-4" id="aiAlertsContainer" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm" style="border-radius: 16px; background-color: #fcf8e3; border-left: 5px solid #f0ad4e !important;">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-exclamation-triangle-fill text-warning fs-4 me-2"></i>
+                                            <h6 class="m-0 font-weight-bold text-dark">AI Attendance Alert Center</h6>
+                                        </div>
+                                        <span class="badge bg-warning text-dark">Urgent Actions</span>
+                                    </div>
+                                    <p class="text-muted small mb-3" id="aiAlertsSummary">Scanning student registries for attendance anomalies...</p>
+                                    <div class="row g-3" id="aiAlertsGrid">
+                                        <!-- Dynamic alert cards will go here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-lg-8">
+
                             <div class="card">
                                 <div class="card-header">
                                     <h6 class="m-0 font-weight-bold" id="tableHeader">Recent Students</h6>
@@ -565,6 +602,7 @@
                                                 <tr>
                                                     <th>ID</th>
                                                     <th>Student</th>
+                                                    <th>AI Urgency</th>
                                                     <th>Type</th>
                                                     <th>Subject</th>
                                                     <th>Date</th>
@@ -573,6 +611,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody id="complaintsTable"></tbody>
+
                                         </table>
                                     </div>
                                 </div>
@@ -735,11 +774,13 @@
                                                     <th>Student</th>
                                                     <th>Period</th>
                                                     <th>Reason</th>
+                                                    <th>AI Risk Assessment</th>
                                                     <th>Status</th>
                                                     <th>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="outpassApprovalTable"></tbody>
+
                                         </table>
                                     </div>
                                 </div>
@@ -761,8 +802,51 @@
                 })();
                 </script>
 
-                <!-- Student Profile Section -->
-                <div id="profile" class="dashboard-section">
+                 <!-- Staff Assistant Section (Warden Only) -->
+                 <div id="staff-assistant" class="dashboard-section">
+                     <div class="card border-primary shadow-sm" style="border-radius: 16px; overflow: hidden;">
+                         <div class="card-header text-white d-flex align-items-center justify-content-between p-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;">
+                             <h6 class="m-0 font-weight-bold"><i class="bi bi-robot me-2"></i>Staff AI RAG Assistant</h6>
+                             <span class="badge bg-light text-primary fw-bold" style="font-size: 0.75rem;">Grounded in Handbook</span>
+                         </div>
+                         <div class="card-body d-flex flex-column bg-light" style="min-height: 520px;">
+                             <div class="alert alert-info border-0 shadow-xs mb-3" style="border-radius: 12px; background-color: rgba(102,126,234,0.08); color: #4a5568;">
+                                 <small><i class="bi bi-info-circle-fill me-1" style="color: #667eea;"></i> Use this assistant to search hostel rules, gate lock SLAs, emergency contact protocols, mess schedules, and pricing directly from the staff handbook.</small>
+                             </div>
+                             
+                             <!-- Chat output logs -->
+                             <div id="staffChatOutput" class="flex-grow-1 overflow-y-auto mb-3 p-3 bg-white border" style="border-radius: 12px; height: 320px; overflow-y: auto;">
+                                 <div class="d-flex mb-3">
+                                     <div class="chat-bubble-bot shadow-xs" style="background-color: #f1f5f9; border: none; max-width: 80%; border-radius: 16px 16px 16px 0; padding: 12px 16px;">
+                                         Hello! I am your staff AI assistant. Ask me anything about hostel rules, emergency hospital procedures, room rates, check-in inventories, or outpass verification guidelines.
+                                     </div>
+                                 </div>
+                             </div>
+                             
+                             <!-- Suggestion Chips -->
+                             <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+                                 <span class="text-muted small fw-bold me-1"><i class="bi bi-patch-question"></i> Ask:</span>
+                                 <button class="btn btn-sm btn-outline-secondary rounded-pill bg-white" style="font-size: 0.78rem;" onclick="sendStaffQuery('What are the curfew hours?')">Curfew hours?</button>
+                                 <button class="btn btn-sm btn-outline-secondary rounded-pill bg-white" style="font-size: 0.78rem;" onclick="sendStaffQuery('What is the turnaround time for plumbing repairs?')">Plumbing SLA?</button>
+                                 <button class="btn btn-sm btn-outline-secondary rounded-pill bg-white" style="font-size: 0.78rem;" onclick="sendStaffQuery('How do I handle a night-time medical emergency?')">Medical emergency?</button>
+                                 <button class="btn btn-sm btn-outline-secondary rounded-pill bg-white" style="font-size: 0.78rem;" onclick="sendStaffQuery('How is room assignment done?')">Room assignments?</button>
+                             </div>
+                             
+                             <!-- Input form -->
+                             <form id="staffChatForm" onsubmit="handleStaffChatSubmit(event)" class="mt-auto">
+                                 <div class="input-group">
+                                     <input type="text" id="staffChatInput" class="form-control rounded-start-pill py-2 px-3 border-end-0" placeholder="Ask about guidelines, outpasses, SLAs, health emergencies..." required autocomplete="off">
+                                     <button class="btn btn-primary rounded-end-pill px-4" type="submit" id="staffChatSendBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                         <i class="bi bi-send-fill"></i>
+                                     </button>
+                                 </div>
+                             </form>
+                         </div>
+                     </div>
+                 </div>
+
+                 <!-- Student Profile Section -->
+                 <div id="profile" class="dashboard-section">
                     <div class="card">
                         <div class="card-header">
                             <h6 class="m-0 font-weight-bold">My Profile</h6>
@@ -1041,6 +1125,15 @@
                             <label class="form-label">Notice Content</label>
                             <textarea class="form-control" id="noticeContent" rows="4" required></textarea>
                         </div>
+                        <div class="text-end mb-2" id="polishNoticeLoader" style="display:none;">
+                            <span class="spinner-border spinner-border-sm text-info" role="status"></span>
+                            <small class="text-info ms-1">Polishing announcement...</small>
+                        </div>
+                        <div class="text-end mb-2" id="polishNoticeBtnGroup">
+                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill" onclick="polishNoticeDraft()">
+                                <i class="bi bi-magic me-1"></i> AI Polish Draft
+                            </button>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1050,6 +1143,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Assign Room Modal -->
     <div class="modal fade" id="assignRoomModal" tabindex="-1">
@@ -1445,7 +1539,106 @@
         </div>
     </div>
 
+    <!-- AI Billing Summary Modal -->
+    <div class="modal fade" id="aiBillingSummaryModal" tabindex="-1" aria-labelledby="aiBillingSummaryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    <h5 class="modal-title fw-bold" id="aiBillingSummaryModalLabel">
+                        <i class="bi bi-robot me-2"></i>AI Billing & Residency Summary
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Loading state -->
+                    <div id="aiSummaryLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted fw-bold">Analyzing registry records and generating summary...</p>
+                    </div>
+                    
+                    <!-- Content state -->
+                    <div id="aiSummaryContent" class="d-none">
+                        <div class="card border-0 shadow-sm p-3 mb-4 bg-white" style="border-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2 text-secondary border-bottom pb-2">
+                                <i class="bi bi-person-badge fs-5 me-2" style="color: #667eea;"></i>
+                                <span class="fw-bold text-uppercase tracking-wider" style="font-size: 0.8rem;">Hostel Registry Profile</span>
+                            </div>
+                            <div class="row g-2" style="font-size: 0.92rem;">
+                                <div class="col-md-6"><strong>Student Name:</strong> <span id="aiSumStudentName" class="text-dark">-</span></div>
+                                <div class="col-md-6"><strong>USN / Seat ID:</strong> <span id="aiSumStudentUSN" class="badge bg-secondary">-</span></div>
+                                <div class="col-md-6"><strong>Assigned Room:</strong> <span id="aiSumStudentRoom" class="text-dark">-</span></div>
+                                <div class="col-md-6"><strong>Fees Status:</strong> <span id="aiSumStudentStatus" class="badge bg-warning text-dark">-</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center mb-2 text-secondary">
+                            <i class="bi bi-cpu fs-5 me-2" style="color: #667eea;"></i>
+                            <span class="fw-bold text-uppercase tracking-wider" style="font-size: 0.8rem;">LLM Analytical Evaluation</span>
+                        </div>
+                        
+                        <div id="aiSummaryText" class="p-3 bg-white border rounded shadow-sm" style="line-height: 1.7; font-size: 0.95rem; border-radius: 12px !important; color: #334155; min-height: 120px;">
+                            <!-- AI response text gets inserted here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;" onclick="regenerateBillingSummary()">
+                        <i class="bi-arrow-clockwise me-1"></i> Refresh Summary
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Monthly Report Modal -->
+    <div class="modal fade" id="aiMonthlyReportModal" tabindex="-1" aria-labelledby="aiMonthlyReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content shadow-lg" style="border-radius: 16px; border: none; overflow: hidden;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    <h5 class="modal-title fw-bold" id="aiMonthlyReportModalLabel">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>AI Monthly Executive Report
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- Loading State -->
+                    <div id="aiReportLoading" class="text-center py-5">
+                        <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Generating...</span>
+                        </div>
+                        <p class="mt-3 text-muted fw-bold">Aggregating hostel stats and synthesizing Warden AI Report...</p>
+                    </div>
+
+                    <!-- Report Content -->
+                    <div id="aiReportContent" class="d-none">
+                        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" style="border-radius: 12px; background-color: rgba(102, 126, 234, 0.1); color: #4a5568;">
+                            <i class="bi bi-info-circle-fill fs-4 me-3 text-primary"></i>
+                            <div>
+                                <strong>Executive Synthesis:</strong> This report is generated dynamically by the Warden AI system based on live database metrics for occupancy, finance, outpasses, and complaints.
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded shadow-sm" id="aiReportText" style="line-height: 1.8; font-size: 1rem; color: #2d3748; min-height: 300px; font-family: 'Segoe UI', system-ui, sans-serif; border-radius: 12px !important;">
+                            <!-- AI Monthly Report markdown text goes here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;" onclick="printAIReport()">
+                        <i class="bi bi-printer me-1"></i> Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="dashboard.js"></script>
 </body>
 </html>
+
+

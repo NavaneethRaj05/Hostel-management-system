@@ -1,0 +1,38 @@
+[
+  {
+    "category": "Curfew and Security",
+    "title": "Curfew Timings and Gate Operations",
+    "content": "Curfew timings are strictly enforced. The boys' hostel curfew is 9:30 PM, and the girls' hostel curfew is 9:00 PM. All security gates must be locked promptly at curfew hours. Students returning late must sign the late entry register at the security desk and provide a valid reason. Recurring late entries (more than 3 times a month) must be escalated to the Chief Warden and will be reported to the student's parents.",
+    "keywords": ["curfew", "gate", "late", "boys", "girls", "time", "security", "locked", "in", "out"]
+  },
+  {
+    "category": "Outpass Approvals",
+    "title": "Student Outpass Approval Protocol",
+    "content": "Outpass requests must be submitted online by students at least 24 hours prior to departure. The Warden is responsible for contacting the parents or guardians to verify the request before approving. Outpasses can be approved by the resident warden for a maximum of 5 days. Any outpass request exceeding 5 days requires approval from the Principal or Chief Warden. Emergency outpasses (e.g., medical reasons or urgent family matters) can be approved immediately by the resident warden without the 24-hour lead time, but parent contact must still be established.",
+    "keywords": ["outpass", "leave", "approve", "parent", "guardian", "duration", "emergency", "travel", "holiday"]
+  },
+  {
+    "category": "Maintenance and Complaints",
+    "title": "Maintenance Complaint Resolution Guidelines (SLA)",
+    "content": "All student complaints regarding hostel facilities must be addressed according to priority. Plumbing issues (leakage, water shortage, tap malfunction) must be resolved within 24 hours. Electrical issues (fan not working, power socket failure, light bulb replacement) must be resolved within 12 hours. Wi-Fi connectivity issues must be resolved within 48 hours. The Warden must dispatch the respective campus technician and mark the complaint status as 'resolved' once completed.",
+    "keywords": ["maintenance", "complaints", "plumbing", "water", "electrical", "electricity", "wifi", "internet", "technician", "leakage", "fan", "light"]
+  },
+  {
+    "category": "Room Assignments and Move-in",
+    "title": "Room Assignment and Admission Procedure",
+    "content": "Room assignment can only be done after verifying the student's USN and confirmation of fee payment. Students in double-sharing rooms are charged INR 1,09,000 per year. Students in four-sharing rooms are charged INR 90,000 per year. A minimum of 50% of the total fee must be paid before room keys are handed over. The Warden must inspect the room condition (lights, fans, beds, cupboards) and get a signed room inventory sheet from the student upon check-in.",
+    "keywords": ["room", "assign", "sharing", "fees", "price", "check-in", "inventory", "admission", "move-in", "keys"]
+  },
+  {
+    "category": "Medical Emergencies",
+    "title": "Medical Emergency and Health Center Protocols",
+    "content": "The campus health center is open from 9:00 AM to 6:00 PM with a resident nurse. A doctor visits the campus daily from 4:00 PM to 6:00 PM. In case of a night-time medical emergency, the Warden must immediately arrange for the campus vehicle to transport the student to Hasan District General Hospital (Contact: +91 81722 23456). Parents must be notified immediately. First-aid kits are available in the warden's office on the ground floor of both hostels.",
+    "keywords": ["emergency", "medical", "hospital", "doctor", "health", "first-aid", "accident", "nurse", "ill", "sick"]
+  },
+  {
+    "category": "Mess and Food Rules",
+    "title": "Hostel Mess Management and Regulations",
+    "content": "The hostel mess serves breakfast (7:30 AM - 9:00 AM), lunch (12:30 PM - 2:00 PM), tea/snacks (5:00 PM - 6:00 PM), and dinner (7:30 PM - 9:00 PM). Outside food delivery is allowed but must be collected at the main security gate; delivery personnel are not allowed inside the hostel blocks. Mess menu changes can be proposed by the student mess committee and require approval from the Warden and Warden-in-Charge.",
+    "keywords": ["mess", "food", "menu", "meals", "delivery", "breakfast", "lunch", "dinner", "eating", "canteen"]
+  }
+]
