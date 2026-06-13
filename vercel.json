@@ -1,13 +1,19 @@
 {
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "{public/**,backend/data/**}"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/index.js"
-    }
+  "version": 2,
+  "builds": [
+    { "src": "api/index.js", "use": "@vercel/node" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "dashboard.html", "use": "@vercel/static" },
+    { "src": "style.css", "use": "@vercel/static" },
+    { "src": "dashboard.js", "use": "@vercel/static" },
+    { "src": "frontend/script.js", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/dashboard", "dest": "/dashboard.html" },
+    { "src": "/style.css", "dest": "/style.css" },
+    { "src": "/dashboard.js", "dest": "/dashboard.js" },
+    { "src": "/frontend/script.js", "dest": "/frontend/script.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

@@ -1044,27 +1044,21 @@ app.get('/api/ai/monthly-report', async (req, res) => {
 });
 
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files
+app.use(express.static(__dirname));
 
 
 // Serve index.html for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
-  const PORT = process.env.PORT || 3001;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Hostel backend listening on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Local access: http://localhost:${PORT}`);
-    console.log(`Network access: http://192.168.31.105:${PORT}`);
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Production mode: Static files served');
-    }
-  });
+if (require.main === module) {
+  // Only listen when run directly (local dev)
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 
+// Always export for Vercel serverless
 module.exports = app;
 
