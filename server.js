@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+// Force fresh Vercel rebuild trigger
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
