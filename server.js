@@ -1042,13 +1042,13 @@ app.get('/api/ai/monthly-report', async (req, res) => {
 });
 
 
-// Serve static files
-app.use(express.static(__dirname));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Serve index.html for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
