@@ -1,4 +1,7 @@
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? (window.location.port === '3001' ? '/api' : 'http://localhost:3001/api')
+    : '/api';
+
 
 async function registerUser({ name, email, password, role, usn, phone, address, parentPhone }) {
     try {
