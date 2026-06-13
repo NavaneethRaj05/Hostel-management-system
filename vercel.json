@@ -1,4 +1,12 @@
 {
+  "functions": {
+    "api/index.js": {
+      "includeFiles": [
+        "public/**",
+        "backend/data/**"
+      ]
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
